@@ -15,27 +15,54 @@ namespace WashingtonSchools.Tests
   public class UnitTest1 : IDisposable
   {
     TestServer Server { get; } = new TestServer(Api.Program.CreateWebHostBuilder());
-    HttpClient Client => Server.CreateClient();
+
+    HttpClient _Client;
+    public HttpClient Client
+    {
+      get
+      {
+        if (_Client == null)
+        {
+          _Client = Server.CreateClient();
+          var builder = new UriBuilder(_Client.BaseAddress);
+          builder.Path += "odata/";
+          _Client.BaseAddress = builder.Uri;
+        }
+
+        return _Client;
+      }
+    }
+
+
 
     [Fact]
     public async Task TestSchools()
     {
-      var settings = new ODataClientSettings(Client);
-      var client = new ODataClient(settings);
-
-      var result = await Client.GetAsync("odata/schools");
+      var result = await Client.GetAsync("schools");
       var content = await result.Content.ReadAsStringAsync();
       var schools = JsonConvert.DeserializeObject<List<School>>(content);
 
       var sample = School.CreateSample();
       Assert.NotEmpty(schools);
       Assert.Contains(schools, s => s.SchoolId == sample.SchoolId);
-    }               
+    }
 
     [Fact]
     public async Task TestMetadata()
     {
+      var settings = new ODataClientSettings(Client);
+      var client = new ODataClient(settings);
 
+      var metadata = await client.GetMetadataDocumentAsync();
+
+      var schools =
+        await client
+          .For<School>()
+          .FindEntriesAsync();
+
+      var sample = School.CreateSample();
+      Assert.NotEmpty(schools);
+      Assert.Contains(schools, s => s.SchoolId == sample.SchoolId);
     }
 
     public void Dispose()

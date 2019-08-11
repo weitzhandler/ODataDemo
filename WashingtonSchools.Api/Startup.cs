@@ -30,10 +30,13 @@ namespace WashingtonSchools.Api
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
-      services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
       var connection = @"Server=(localdb)\mssqllocaldb;Database=WSDB;Trusted_Connection=True;ConnectRetryCount=0";
       services.AddDbContext<WSDbContext>(options => options.UseSqlServer(connection));
       services.AddOData();
+
+      services.AddMvc(options =>
+      options.EnableEndpointRouting = false).SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -55,7 +58,7 @@ namespace WashingtonSchools.Api
         routeBuilder.Expand().Select().Count().OrderBy().Filter();
 
         //uncommenting this line will throw an exception
-        //routeBuilder.MapODataServiceRoute("odata", "odata", GetEdmModel());
+        routeBuilder.MapODataServiceRoute("odata", "odata", GetEdmModel());
       });
 
 
